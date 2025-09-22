@@ -1,0 +1,11 @@
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: deny-allingress 
+  namespace: user1-project
+spec:
+  podSelector:
+    matchLabels:
+      app: code-with-quarkus
+  policyTypes:
+    - Ingress

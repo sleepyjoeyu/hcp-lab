@@ -1,0 +1,190 @@
+
+
+function notehelp() {
+
+for i in $(grep -E ^function ./ocpnote.txt|awk '{print $2}'|sed -r 's/\(|\)//g'|grep -v notehelp|sort)
+do
+	helpmsg=$(grep $i-help ./ocpnote.txt|awk -F= '{print $2}')
+	#echo "$i-$helpmsg"	
+	printf "%-18s %-10s\n" "$i" "$helpmsg"
+
+done
+}
+
+function get-cluster() {
+
+#get-cluster-help="Get cluster api server name"
+#oc whoami --show-server|sed -r 's/api\.|:6443|https:\/\///g'
+oc whoami --show-console | sed -r 's/https:\/\/console-openshift-console.apps.//g'
+
+}
+
+function hcp-set-wildcard() {
+#hcp-set-wildcard-help="Allow ingress route to accpet wildcards"
+
+oc patch ingresscontroller -n openshift-ingress-operator default --type=json -p '[{ "op": "add", "path": "/spec/routeAdmission", "value": {wildcardPolicy: "WildcardsAllowed"}}]'
+
+}
+
+
+function chknodestorage() {
+#chknodestorage-help="Need core@ssh enabled - Check node storage space over 60%"
+
+for i in $(oc get node -o wide |grep -v NAME|awk '{print $6}')
+do
+	ssh core@$i "hostname  && df -h |grep "\/dev" | grep -E  '[6-9][0-9]%'"
+	
+done
+}
+
+function getworkermc() {
+#getworkermc-help="Get the current machine config that the workers applied"
+
+WORKMC=$(oc get mcp |grep worker|awk  '{print $2}')
+oc get mc $WORKMC -o json | jq '{releaseImageVersion:.metadata.annotations["machineconfiguration.openshift.io/release-image-version"], Image:.spec.baseOSExtensionsContainerImage, OSImage:.spec.osImageURL}'
+}
+
+
+function chkmcconfig() {
+#chkmcconfig-help="Check Machine Config: need to specify one node name"
+
+node=$1
+
+if [ -z  "$node" ];then
+
+	echo "Need node-name!!!"
+else
+	oc get node $node -o yaml |grep Config
+fi
+}
+
+function approvecsr() {
+
+#approvecsr-help="Approve all pending CSRs. It may need to execute serveral times."
+
+for i in `oc get csr | grep Pending|awk '{print $1}'`;do oc adm certificate approve $i;done
+
+}
+
+function chknoders() {
+
+#chknoders-help="Check node CPU and Memory resource - highlight if over 70%"
+
+oc adm top node
+echo  "----------- Resource over 70% --------------"
+oc adm top node |grep --color [7-9][0-9]%
+
+}
+
+function swconfig() {
+#swconfig-help="List all OCP config in path $targetpath"
+
+
+array=()
+targetpath=~/config
+
+
+c=0
+for i in $(ls $targetpath); do 
+	echo "$c - $i" 
+	array+=("$i")
+	c=$[c+1]
+done
+echo "Input select number:"
+read option
+
+if [[ $option =~ ^[0-9]+$ ]];then
+        if [ $option -ge $c ];then
+                echo "Out of Scope..."
+                exit
+        fi
+        var=${array["$option"]}
+	export KUBECONFIG="$targetpath/$var"
+	echo "Successlly change KUBECONFIG to $KUBECONFIG"
+else
+        echo "Please input integer only!!"
+        exit
+fi
+
+
+}
+
+
+function chknodegpu() {
+#chknodegpu-help="List note with GPU resources"
+
+	oc get node -l feature.node.kubernetes.io/pci-10de.present=true
+
+}
+
+
+function chknodelabel() {
+#chknodelabel-help="List node with specified label (default:nodehealthcheck)"
+
+if [ -z "$1" ];then
+	oc get node -L nodehealthcheck
+else
+	oc get node -L $1
+fi
+
+}
+
+function chknode() {
+#chknode-help="List node with specified role: master/worker (Default: show all)"
+
+if [ "$1" == "worker" ];then
+	oc get node -l node-role.kubernetes.io/worker=
+elif [ "$1" == "master" ];then
+	oc get node -l node-role.kubernetes.io/master=
+else
+	echo "Input worker / master / empty(default)"
+	oc get node
+fi
+
+}
+
+function toolimgbuild() {
+
+# toolimgbuild-help="Create a tool pod for testing"
+
+oc get is |grep ocpnote-tools
+if [ $? -eq 0 ];then 
+
+	echo ocpnote-toool image exist!!
+	return 1
+fi
+ 
+oc new-build --name=ocpnote-tools  --dockerfile - <<EOF
+	FROM registry.redhat.io/rhel9/support-tools:latest
+    	RUN dnf install -y bind-utils lsof nmap-ncat
+    	CMD ["sleep", "infinity"]
+EOF
+
+}
+
+function toolpod() {
+ 
+#toolpod-help="Deploy a tool pod for testing"
+
+oc get pod |grep ocpnote-tools|grep -v build
+if [ $? -eq 0 ];then 
+
+	echo ocpnote-tool pod exist!!
+	return 1
+fi
+
+toolimage=$(oc get is | grep ocpnote-tools |awk '{print $1}') 
+#toolimage=$(oc get is | grep ocpnote-tools |awk '{print $2}') 
+oc new-app -i $toolimage --name=ocpnote-tools
+#oc new-app --image=$toolimage --name=ocpnote-tools
+}
+
+function wai() {
+#wai-help="Where am I? Which cluster? Which namespace?"
+get-cluster
+oc project|awk '{print $2" "$3}'
+
+
+}
+
+

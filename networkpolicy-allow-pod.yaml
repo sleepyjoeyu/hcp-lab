@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-user2-dotnet
+  namespace: user1-project
+spec:
+  podSelector:
+    matchLabels:
+      app: code-with-quarkus
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: dotnet-sample
+          namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: user2-project
+      ports:
+       - protocal: tcp
+         port: 8081
+  policyTypes:
+    - Ingress
+

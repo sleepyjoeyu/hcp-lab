@@ -1,0 +1,34 @@
+oc create secret generic htpass-secret --from-file=htpasswd=/home/joe/ocpsource/htpasswd-file -n openshift-config
+oc edit oauth cluster
+spec:
+  identityProviders:
+  - htpasswd:
+      fileData:
+        name: htpass-secret
+    mappingMethod: claim
+    name: my_htpasswd_provider
+    type: HTPasswd
+oc get pod -n openshift-authentication
+oc adm policy add-cluster-role-to-user cluster-admin
+
+
+[user1]
+
+code-with-quarkus.user1-project.svc.cluster.local
+
+oc policy add-role-to-user view user2
+oc get rolebindings view -o yaml
+
+oc policy remove-role-from-user view user2
+
+# grant user1 to acm 
+oc create clusterrolebinding user1-acm --clusterrole=open-cluster-management:admin:local-cluster -n user1-project  --user=user1
+
+[user2]
+
+# 不用debug測試，因為就不是原本的pod: oc debug deploy/dotnet-sample  --image=registry.redhat.io/rhel9/support-tools:latest
+# networkpolicy not support ping, so use curl instead
+curl  http://code-with-quarkus.user1-project.svc.cluster.local:8081
+
+
+
