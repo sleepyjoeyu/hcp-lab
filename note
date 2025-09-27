@@ -1,5 +1,8 @@
 [environment]
 
+hcp-lab webpage
+Browser Tab1 - content/4.18/welcome.html - show doc only
+Browser Tab1 - right-side: terminal - web browser - fullscreen 
 
 oc login -u kubeadmin -p   https://
 oc login -u user1 -p redhat https://
