@@ -1,0 +1,120 @@
+[environment]
+https://api:6443
+https://console-openshift-console.apps.basedn
+kubeadmin / 
+
+oc login -u kubeadmin -p jM6m3-ymyKS-TVLg9-WycJS  https://api.hub.rhtw.com:6443
+oc login -u user1 -p redhat https://api.hub.rhtw.com:6443
+oc login -u user2 -p redhat https://api.hub.rhtw.com:6443
+oc login -u user3 -p redhat https://api.hub.rhtw.com:6443
+---------------------------------------------------------------------------------------------------------
+[Oauth]
+
+UI - Adminstartion - Cluster Settings - Configuration - filter: Oauth - Oauth - Identity providers -Add
+- Add htpasswd - htpasswd2 - upload file  htpasswd/htpasswd-file2
+
+Bastion
+- Terminal:  for user1, user2
+- Login - oc login as user1, user2
+- Check project: oc projects 
+- Check pod: oc get pod -n user1-project
+
+[RBAC]
+UI - User Management - Groups - Create Group
+- name: example
+-   users: user3
+
+UI 
+- Waitting for authentication is back
+- relogin as user3
+- relogin as kubeadmin
+
+Bastion
+- Terminal:  for user3
+- Login - oc login as user3
+- Access Test
+  . oc project user1-project
+  . oc project user2-project
+
+UI - User Management - Groups - example - RoleBindings - Create binding
+- name: user3-view-user1-project
+- namespace: user1-project
+- Role name: view
+
+Bastion 
+- user3 terminal
+- Access Test: oc project user1-project
+
+
+[resourcequota]
+
+UI(poject: user1-project) - Administration -ResourceQuotas - Create ResourceQuota
+- name: storage-class-quota
+  spec:
+  hard:
+    requests.storage: 3Gi
+
+UI(user3) -  Administration - ResourceQuotas - storage-class-quota
+- try delete
+
+UI(user3) -  Storage - PersistentVolumeClaim - Create PersistentVolumeClaim
+- PersistentVolumeClaim name: testpv1
+- Size: 4G
+
+[Network Policy]
+
+Terminal(user2)
+- oc project user2-project
+- oc rsh $(oc get pod -l app=dotnet-sample| awk '{print $1}'|tail -n1) 
+- pod: curl http://code-with-quarkus.user1-project.svc.cluster.local:8081 
+
+
+UI(user1, project: user1-project) -  Networking - NetworkPolicies - Create NetworPolicy
+- name: deny-all
+- Deny all ingress traffic: check 
+
+
+Terminal(user2) - pod
+- curl http://code-with-quarkus.user1-project.svc.cluster.local:8081
+
+UI(user1, project: user1-project) -  Networking - NetworkPolicies - Create NetworPolicy
+- name: allow-user2
+- Add ingress rile - Allow traffic from pods inside the cluster
+  . kubernetes.io/metadata.name=user2-projectTerminal(user2) - pod
+- curl http://code-with-quarkus.user1-project.svc.cluster.local:8081
+
+UI(user1, project: user1-project) -  Networking - NetworkPolicies - Create NetworPolicy
+- name: allow-user2
+- Add ingress rile - Allow traffic from pods inside the cluster
+  . namespace selector: kubernetes.io/metadata.name=user2-project
+
+Terminal(user2) - pod
+- curl http://code-with-quarkus.user1-project.svc.cluster.local:8081
+
+
+[option: project template]
+
+Terminal(admin)
+- oc adm create-bootstrap-project-template -o yaml  > project-template.yaml
+- add limit in project-template.yaml 
+- oc create -f project-template.yaml -n openshift-config
+- oc get template project-request -n openshift-config
+
+UI(admin)
+
+I - Adminstartion - Cluster Settings - Configuration - filter: project  - Action:Edit project
+- view sidebar - spec view details
+- Add and save
+  spec:
+  projectRequestTemplate:
+    name: project-request
+
+Wait for couple minutes
+
+Terminal(admin)
+- oc get project.config cluster -o yaml
+- oc new project test123
+- oc get resourcequota
+
+
+
