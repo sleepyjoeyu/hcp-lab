@@ -1,12 +1,10 @@
 [environment]
-https://api:6443
-https://console-openshift-console.apps.basedn
-kubeadmin / 
 
-oc login -u kubeadmin -p jM6m3-ymyKS-TVLg9-WycJS  https://api.hub.rhtw.com:6443
-oc login -u user1 -p redhat https://api.hub.rhtw.com:6443
-oc login -u user2 -p redhat https://api.hub.rhtw.com:6443
-oc login -u user3 -p redhat https://api.hub.rhtw.com:6443
+
+oc login -u kubeadmin -p   https://
+oc login -u user1 -p redhat https://
+oc login -u user2 -p redhat https://
+oc login -u user3 -p redhat https://
 ---------------------------------------------------------------------------------------------------------
 [Oauth]
 
