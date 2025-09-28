@@ -117,5 +117,15 @@ Terminal(admin)
 - oc new project test123
 - oc get resourcequota
 
+[option: Disbale self provisioner (Create project capability)]
+
+Terminal(Admin)
+- oc describe clusterrolebinding self-provisioner
+- oc adm policy remove-cluster-role-from-group self-provisioner  
+- oc describe clusterrolebinding self-provisioner
+
+Terminal(user1)
+- oc new-project user1-test1
+
 
 
